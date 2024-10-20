@@ -1,17 +1,16 @@
-# Part 1: Imports
-import pandas as pd              # For data manipulation and analysis
-import numpy as np              # For numerical operations
-from sklearn.model_selection import train_test_split  # For splitting dataset
-from sklearn.feature_extraction.text import TfidfVectorizer  # For text vectorization
-from sklearn.svm import LinearSVC  # The classifier we're using
-import joblib                   # For saving/loading trained models
-import os                       # For file and system operations
-import time                     # For adding delays if needed
+import pandas as pd              
+import numpy as np              
+from sklearn.model_selection import train_test_split  
+from sklearn.feature_extraction.text import TfidfVectorizer  
+from sklearn.svm import LinearSVC  
+import joblib                   
+import os                       
+import time                     
 
-# Part 2: The FakeNewsDetector Class
+#The FakeNewsDetector Class
 class FakeNewsDetector:
     def __init__(self):
-        # Initialize empty vectorizer and classifier
+        # Initialize empty vectorizer and classifier(they will act as containers waiting to b filled)
         self.vectorizer = None
         self.classifier = None
     
@@ -32,11 +31,10 @@ class FakeNewsDetector:
         
         # Create and train the vectorizer
         # stop_words='english' removes common English words
-        # max_df=0.7 ignores terms that appear in >70% of documents
         self.vectorizer = TfidfVectorizer(stop_words='english', max_df=0.7)
         X_train_vectorized = self.vectorizer.fit_transform(X_train)
         
-        # Train the classifier
+        # Training the classifier
         self.classifier = LinearSVC()
         self.classifier.fit(X_train_vectorized, y_train)
         
@@ -57,7 +55,7 @@ class FakeNewsDetector:
         prediction = self.classifier.predict(vectorized_text)[0]
         return "REAL" if prediction == 0 else "FAKE"
 
-# Part 3: Utility Functions
+#Utility Functions
 def create_input_file():
     """Creates input file if it doesn't exist"""
     if not os.path.exists("input_news.txt"):
@@ -68,12 +66,12 @@ def clear_screen():
     """Clears the console screen"""
     os.system('cls' if os.name == 'nt' else 'clear')
 
-# Part 4: Main Function
+# Main Program
 def main():
     # Initialize detector
     detector = FakeNewsDetector()
     
-    # Train or load model
+    # Train or load model(This is where the whole empty Vectrozier concept is used)
     if not (os.path.exists('vectorizer.joblib') and os.path.exists('classifier.joblib')):
         print("Training new model...")
         detector.train_model()
@@ -83,10 +81,10 @@ def main():
         detector.load_model()
         print("Model loaded successfully!")
     
-    # Create input file
+    # Creating input file
     create_input_file()
     
-    # Main program loop
+    # Main program loop(this was created before we dicided to create a frontend)
     while True:
         clear_screen()
         print("\nFake News Detector Menu:")
@@ -98,7 +96,7 @@ def main():
         
         if choice == '1':
             try:
-                # Read the input file
+                # Read the input file (a txt file with news article in it acts as the input data)
                 with open("input_news.txt", "r", encoding="utf-8") as f:
                     news_text = f.read().strip()
                 
