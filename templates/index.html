@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Detector</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">Fake News Detector</h1>
+            <p class="text-gray-600">Enter a news article to check its authenticity</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="max-w-4xl mx-auto">
+            <!-- Input Tabs -->
+            <div class="mb-8 flex space-x-4">
+                <button id="textTabBtn" 
+                        class="flex-1 py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200">
+                    <i class="fas fa-keyboard mr-2"></i>Text Input
+                </button>
+                <button id="fileTabBtn" 
+                        class="flex-1 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-200">
+                    <i class="fas fa-file-upload mr-2"></i>File Upload
+                </button>
+            </div>
+
+            <!-- Text Input Section -->
+            <div id="textInput" class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <form id="textForm" class="space-y-4">
+                    <textarea 
+                        id="newsText" 
+                        class="w-full h-48 p-4 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                        placeholder="Paste your news article here..."></textarea>
+                    <button 
+                        type="submit"
+                        class="w-full bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 transition duration-200 flex items-center justify-center">
+                        <i class="fas fa-search mr-2"></i>Analyze Text
+                    </button>
+                </form>
+            </div>
+
+            <!-- File Upload Section -->
+            <div id="fileInput" class="hidden bg-white rounded-lg shadow-lg p-6 mb-8">
+                <form id="fileForm" class="space-y-4">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600 mb-2">Drag and drop your file here or</p>
+                        <input 
+                            type="file" 
+                            id="fileInput" 
+                            class="hidden"
+                            accept=".txt">
+                        <button 
+                            type="button"
+                            onclick="document.getElementById('fileInput').click()"
+                            class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition duration-200">
+                            Browse Files
+                        </button>
+                    </div>
+                    <button 
+                        type="submit"
+                        class="w-full bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 transition duration-200 flex items-center justify-center">
+                        <i class="fas fa-search mr-2"></i>Analyze File
+                    </button>
+                </form>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results" class="hidden bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-semibold mb-4">Analysis Results</h2>
+                <div id="resultContent" class="mb-6 p-4 rounded-lg"></div>
+                
+                <div class="mb-6">
+                    <h3 class="font-semibold mb-2">Confidence Level:</h3>
+                    <div id="confidenceLevel" class="text-lg"></div>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold mb-2">Analyzed Text Preview:</h3>
+                    <div id="textPreview" class="p-4 bg-gray-50 rounded-lg text-sm"></div>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div id="error" class="hidden bg-red-100 text-red-700 p-4 rounded-lg mb-8"></div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        const textTabBtn = document.getElementById('textTabBtn');
+        const fileTabBtn = document.getElementById('fileTabBtn');
+        const textInput = document.getElementById('textInput');
+        const fileInput = document.getElementById('fileInput');
+
+        textTabBtn.addEventListener('click', () => {
+            textTabBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            textTabBtn.classList.add('bg-blue-500', 'text-white');
+            fileTabBtn.classList.remove('bg-blue-500', 'text-white');
+            fileTabBtn.classList.add('bg-gray-200', 'text-gray-700');
+            textInput.classList.remove('hidden');
+            fileInput.classList.add('hidden');
+        });
+
+        fileTabBtn.addEventListener('click', () => {
+            fileTabBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            fileTabBtn.classList.add('bg-blue-500', 'text-white');
+            textTabBtn.classList.remove('bg-blue-500', 'text-white');
+            textTabBtn.classList.add('bg-gray-200', 'text-gray-700');
+            fileInput.classList.remove('hidden');
+            textInput.classList.add('hidden');
+        });
+
+        // Form submission handling
+        document.getElementById('textForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = document.getElementById('newsText').value;
+            await analyzeText(text);
+        });
+
+        document.getElementById('fileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = document.getElementById('fileInput').files[0];
+            if (file) {
+                await analyzeFile(file);
+            }
+        });
+
+        async function analyzeText(text) {
+            try {
+                const formData = new FormData();
+                formData.append('news_text', text);
+
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                await handleResponse(response);
+            } catch (error) {
+                showError('An error occurred while analyzing the text.');
+            }
+        }
+
+        async function analyzeFile(file) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/analyze-file', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                await handleResponse(response);
+            } catch (error) {
+                showError('An error occurred while analyzing the file.');
+            }
+        }
+
+        async function handleResponse(response) {
+            const data = await response.json();
+            
+            if (!response.ok) {
+                showError(data.error || 'An error occurred');
+                return;
+            }
+
+            const results = document.getElementById('results');
+            const resultContent = document.getElementById('resultContent');
+            const confidenceLevel = document.getElementById('confidenceLevel');
+            const textPreview = document.getElementById('textPreview');
+            
+            results.classList.remove('hidden');
+            
+            // Style based on result
+            resultContent.className = 'p-4 rounded-lg ' + 
+                (data.result === 'REAL' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+            resultContent.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${data.result === 'REAL' ? 'fa-check-circle text-green-500' : 'fa-times-circle text-red-500'} text-2xl mr-2"></i>
+                    <span class="text-lg">This news article appears to be: <strong>${data.result}</strong></span>
+                </div>
+            `;
+            
+            confidenceLevel.textContent = data.confidence;
+            textPreview.textContent = data.text_preview;
+            
+            document.getElementById('error').classList.add('hidden');
+            
+            // Scroll to results
+            results.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = message;
+            error.classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            error.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
